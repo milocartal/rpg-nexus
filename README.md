@@ -1,110 +1,165 @@
 # RPG Nexus
 
-Un projet de jeu de rôle (RPG) développé avec Unity, conçu comme une plateforme modulaire et évolutive pour créer des expériences RPG immersives.
+Plateforme de jeu de rôle (RPG) 2D sous Unity, pensée comme un socle modulaire pour jouer **dans les univers, personnages et campagnes créés sur RPG-Gestionary** (auth, récupération/synchronisation des données, outillage MJ).
 
-## 🎮 Description
+## 🗺️ Contexte & objectifs (client)
 
-RPG Nexus est un framework de base pour développer des jeux de rôle en 2D utilisant Unity. Le projet fournit une architecture solide et extensible pour créer des RPG avec des systèmes de combat, d'inventaire, de progression de personnages et bien plus.
+* **Contexte** : le site **RPG-Gestionary** permet de créer univers, personnages et campagnes. Le jeu **RPG Nexus** doit offrir une expérience « plateau » connectée à ces contenus. 
+* **Objectif** :
 
-## 🛠️ Technologies utilisées
+  * Authentifier les utilisateurs avec leurs identifiants RPG-Gestionary.
+  * **Récupérer** univers/PNJ/personnages/sessions autorisés pour l’utilisateur.
+  * **Permettre aux MJ** de créer des **maps** et des **sessions** puis d’animer la partie (dés, fog of war, PNJ/ennemis, états/bonus/malus, inventaire).
+  * **Sauvegarder** l’avancement des campagnes **sur la plateforme**. 
 
-- **Moteur** : Unity 6000.2.6f1 (Unity 6)
-- **Pipeline de rendu** : Universal Render Pipeline (URP) 17.2.0
-- **Système d'entrée** : Unity Input System 1.14.2
-- **Animation 2D** : Unity 2D Animation 12.0.2
-- **Support d'assets** : Aseprite Importer, PSD Importer
-- **Outils 2D** : Sprite Shape, Tilemap, Tilemap Extras
+## 🎮 Portée V1 (CdC)
+
+Fonctionnalités cœur directement alignées sur le besoin client :
+
+* **Authentification** via identifiants RPG-Gestionary *(implémentation exacte à valider avec l’API ; ne jamais stocker de mot de passe en clair)*. 
+* **Récupération des données joueur** : univers accessibles, personnages jouables, sessions disponibles. 
+* **Rôles & droits** : différenciation **Joueur** / **MJ** (MJ hérite des droits joueur + outils). 
+* **Éditeur de map (MJ)** : création/édition de cartes d’un univers ; **une map peut appartenir à plusieurs sessions**. 
+* **Gestion des sessions (MJ)** : création/lancement de sessions dans un univers. 
+* **Dés en session** (MJ & joueurs) avec **modificateurs/attributs paramétrables**. 
+* **Fog of War** : verrouillage/déverrouillage de zones par le MJ. 
+* **PNJ & ennemis** : création/contrôle par le MJ en session. 
+* **États/effets** sur personnages (bonus/malus) gérés par le MJ. 
+* **Inventaire** : gestion par le MJ, **vue en lecture seule côté joueurs**. 
+* **Familiers** : gestion côté MJ **ou** joueur selon option définie sur le site. 
+* **Sauvegarde/synchronisation** de la progression de la campagne vers RPG-Gestionary. 
+
+### Hors-portée V1 (éventuellement plus tard)
+
+* Combat RPG complet, dialogues/quetes, progression de niveau, audio avancé, etc. (anciens objectifs du framework générique).
+
+## 🛠️ Technologies
+
+* **Moteur** : Unity **6000.2.6f1** (Unity 6)
+* **Rendu** : Universal Render Pipeline (URP) **17.2.0**
+* **Input** : Unity Input System **1.14.2**
+* **2D** : Unity 2D Animation **12.0.2**, Sprite Shape, Tilemap & Extras
+* **Import** : Aseprite Importer, PSD Importer
+* **Outils** : Visual Scripting, Timeline
 
 ## 📁 Structure du projet
 
 ```
 Assets/
 ├── Scenes/
-│   └── SampleScene.unity          # Scène principale de démonstration
+│   └── SampleScene.unity
 ├── Settings/
-│   ├── UniversalRP.asset          # Configuration URP
-│   ├── Renderer2D.asset           # Renderer 2D
+│   ├── UniversalRP.asset
+│   ├── Renderer2D.asset
 │   └── Lit2DSceneTemplate.scenetemplate
-├── InputSystem_Actions.inputactions  # Configuration des contrôles
-└── DefaultVolumeProfile.asset     # Profil de post-processing
+├── InputSystem_Actions.inputactions
+└── DefaultVolumeProfile.asset
 ```
 
-## 🚀 Installation et configuration
+## 🔐 Authentification & synchro (avec RPG-Gestionary)
+
+> Implémentation exacte à confirmer avec l’API de RPG-Gestionary (schéma d’auth, type de jeton, endpoints). Le jeu **ne stocke jamais le mot de passe en clair**. 
+
+### Variables d’environnement (Unity → Project Settings → Player → Scripting Define Symbols)
+
+Créez un fichier `.env.example` (ou un ScriptableObject `RPGGestionarySettings` selon préférence) :
+
+```
+RPG_API_BASE_URL=
+RPG_CLIENT_ID=
+RPG_CLIENT_SECRET=   # si applicable (éviter côté client si le flux l’exige)
+```
+
+### Flux attendu (proposé)
+
+1. Écran de connexion (identifiants RPG-Gestionary).
+2. Appel API → **jeton** (session).
+3. Hydratation du profil : univers, personnages, sessions autorisés.
+4. Au lancement d’une session : push/pull des données nécessaires (maps, PNJ/ennemis, états, inventaire).
+5. Sauvegarde régulière → plateforme (checkpoints).
+
+## 🧩 Modules principaux
+
+* **Core** : bootstrap, services, gestion des données & cache.
+* **Auth** : UI + service d’auth.
+* **Sync** : clients API (profils, univers, maps, sessions, inventaire, sauvegardes).
+* **Map Editor (MJ)** : création/édition/assignation aux sessions (multi-sessions support). 
+* **Session Runtime** : table virtuelle, initiative (si utile), outils MJ.
+* **Dice Roller** : dX avec modificateurs/attributs paramétrables. 
+* **Fog of War** : masquage/révélation par zones. 
+* **NPC/Enemies** : gestion entités MJ. 
+* **States/Effects** : application/suivi bonus-malus. 
+* **Inventory** : CRUD MJ, lecture joueurs. 
+* **Save** : synchronisation campagne. 
+
+## 🚀 Installation
 
 ### Prérequis
 
-- Unity 6000.2.6f1 ou version supérieure
-- Git
+* Unity **6000.2.6f1** ou supérieur
+* Git
 
-### Étapes d'installation
+### Étapes
 
-1. **Cloner le repository**
+```bash
+git clone https://github.com/milocartal/rpg-nexus.git
+cd rpg-nexus
+```
 
-   ```bash
-   git clone https://github.com/milocartal/rpg-nexus.git
-   cd rpg-nexus
-   ```
+1. Ouvrir dans **Unity Hub** (Unity 6000.2.6f1).
+2. Vérifier l’URP et l’Input System (auto-configurés).
+3. Renseigner les variables d’API (voir plus haut).
 
-2. **Ouvrir dans Unity**
+## 🎯 Roadmap (V1)
 
-   - Lancez Unity Hub
-   - Cliquez sur "Add project from disk"
-   - Sélectionnez le dossier `rpg-nexus`
-   - Ouvrez le projet avec Unity 6000.2.6f1
+* **Auth & profil** (base)
+* **Map Editor MJ** (création, multi-sessions)
+* **Sessions** (création/lancement)
+* **Dés** (modificateurs)
+* **Fog of War**
+* **PNJ/Ennemis**
+* **États/bonus/malus**
+* **Inventaire** (gestion MJ, vue joueurs)
+* **Sauvegarde** (push vers plateforme)
 
-3. **Configuration initiale**
-   - Le projet utilisera automatiquement l'Universal Render Pipeline configuré
-   - Les systèmes d'entrée sont préconfigurés via Input System
+> Tous ces items proviennent du CdC client. 
 
-## 🎯 Fonctionnalités prévues
+## 🔧 Paramètres Unity recommandés
 
-- [ ] Système de combat au tour par tour
-- [ ] Gestion des personnages et statistiques
-- [ ] Système d'inventaire et d'objets
-- [ ] Dialogue et système de quêtes
-- [ ] Système de progression et de niveaux
-- [ ] Interface utilisateur responsive
-- [ ] Sauvegarde et chargement de parties
-- [ ] Système audio et effets sonores
+* **Plateforme cible** : PC, Mac & Linux Standalone
+* **Mode de rendu** : 2D URP
+* **Résolution** : 1920×1080 (adaptable)
 
-## 🔧 Configuration Unity
+## 🧪 Qualité & tests
 
-### Packages installés
-
-- **2D** : Animation, Sprite Shape, Tilemap
-- **Rendering** : Universal RP
-- **Input** : Input System
-- **Tools** : Visual Scripting, Timeline
-- **Import** : Aseprite, PSD Importer
-
-### Paramètres recommandés
-
-- **Plateforme cible** : PC, Mac & Linux Standalone
-- **Mode de rendu** : 2D URP
-- **Résolution** : 1920x1080 (adaptable)
+* Tests d’intégration API (auth, profil, synchro)
+* Tests de régression sur Fog of War & inventaire
+* Playtests MJ/Joueurs (comportements session, dés, états)
 
 ## 🤝 Contribution
 
-Les contributions sont les bienvenues ! Pour contribuer :
+1. Fork
+2. Branche : `feature/<NomFeature>`
+3. Commits : clairs & atomiques
+4. PR avec description, captures si UI MJ/Joueur
 
-1. Forkez le projet
-2. Créez une branche pour votre fonctionnalité (`git checkout -b feature/AmazingFeature`)
-3. Committez vos changements (`git commit -m 'Add some AmazingFeature'`)
-4. Poussez vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrez une Pull Request
+## 📓 Glossaire
+
+* **MJ** : Maître du Jeu (rôle avec outils avancés)
+* **Session** : instance de partie dans un univers
+* **Map** : carte jouable ; peut être liée à plusieurs sessions 
 
 ## 📝 Licence
 
-Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+MIT — voir [LICENSE](LICENSE)
 
 ## 📞 Contact
 
-Milo CARTAL - [@milocartal](https://github.com/milocartal)
-
-Lien du projet : [https://github.com/milocartal/rpg-nexus](https://github.com/milocartal/rpg-nexus)
+Milo CARTAL — [@milocartal](https://github.com/milocartal)
+Projet : [https://github.com/milocartal/rpg-nexus](https://github.com/milocartal/rpg-nexus)
 
 ## 🙏 Remerciements
 
-- Unity Technologies pour l'excellent moteur de jeu
-- La communauté Unity pour les ressources et tutoriels
-- Tous les contributeurs qui aident à améliorer ce projet
+* Unity Technologies
+* Communauté Unity
+* Contributeurs & testeurs
